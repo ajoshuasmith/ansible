@@ -1,0 +1,12 @@
+---
+- name: Install XCP-NG guest utilities
+  ansible.builtin.apt:
+    name: xe-guest-utilities
+    state: present
+
+- name: Enable xe-linux-distribution service
+  ansible.builtin.service:
+    name: xe-linux-distribution
+    enabled: yes
+    state: started
+  ignore_errors: yes

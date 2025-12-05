@@ -1,0 +1,28 @@
+---
+- name: Configure all docker VMs
+  hosts: docker_hosts
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+  roles:
+    - ssh_baseline
+    - ssh_key_push
+    - xcp_guest_tools
+    - docker_engine
+
+- name: Deploy Portainer Server on docker-neo
+  hosts: portainer_server
+  become: true
+  roles:
+    - portainer_server
+
+- name: Deploy Portainer Agent on other docker-* hosts
+  hosts: portainer_agents
+  become: true
+  roles:
+    - portainer_agent

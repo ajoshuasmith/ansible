@@ -1,0 +1,5 @@
+---
+portainer_data_volume: portainer_data
+portainer_image: portainer/portainer-ce:latest
+portainer_https_port: "9443"
+portainer_http_port: "9000"

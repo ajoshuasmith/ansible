@@ -1,0 +1,17 @@
+---
+- name: Run Portainer agent container
+  ansible.builtin.command: >
+    docker run -d
+    --name portainer_agent
+    --restart=always
+    -p {{ portainer_agent_port }}:{{ portainer_agent_port }}
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -v /var/lib/docker/volumes:/var/lib/docker/volumes
+    {{ portainer_agent_image }}
+  register: run
+  changed_when: "'Unable to find image' in run.stderr or run.rc == 0"
+  failed_when: run.rc not in [0,125]
+
+- name: Ensure container is started
+  ansible.builtin.command: docker start portainer_agent
+  ignore_errors: yes
