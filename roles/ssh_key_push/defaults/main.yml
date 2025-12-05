@@ -1,0 +1,5 @@
+---
+# SSH key configuration
+ssh_private_key_name: id_ed25519
+ssh_public_key_path: "{{ lookup('env', 'HOME') }}/.ssh/{{ ssh_private_key_name }}.pub"
+

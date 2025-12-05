@@ -12,7 +12,6 @@
   roles:
     - ssh_baseline
     - ssh_key_push
-    - xcp_guest_tools
     - docker_engine
 
 - name: Deploy Portainer Server on docker-neo

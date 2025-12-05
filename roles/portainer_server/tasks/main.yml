@@ -1,11 +1,38 @@
 ---
-- name: Create Portainer data volume
-  ansible.builtin.command: "docker volume create {{ portainer_data_volume }}"
-  register: vol
-  changed_when: "'Created' in vol.stdout"
-  failed_when: vol.rc not in [0]
+- name: Check if Portainer container exists and is running
+  ansible.builtin.shell: |
+    if docker ps --filter name=portainer --filter status=running --format "{{ '{{' }}.Names{{ '}}' }}" | grep -q portainer; then
+      echo "running"
+    elif docker ps -a --filter name=portainer --format "{{ '{{' }}.Names{{ '}}' }}" | grep -q portainer; then
+      echo "exists"
+    else
+      echo "missing"
+    fi
+  register: portainer_status
+  changed_when: false
+  failed_when: false
 
-- name: Run Portainer server container
+- name: Check if Portainer data volume exists
+  ansible.builtin.command: docker volume inspect {{ portainer_data_volume }}
+  register: portainer_volume_check
+  changed_when: false
+  failed_when: false
+
+- name: Create Portainer data volume
+  ansible.builtin.command: docker volume create {{ portainer_data_volume }}
+  register: vol_create
+  changed_when: "'Created' in vol_create.stdout"
+  failed_when: vol_create.rc != 0
+  when: portainer_volume_check.rc != 0
+
+- name: Start Portainer container if it exists but is not running
+  ansible.builtin.command: docker start portainer
+  register: container_start
+  changed_when: container_start.rc == 0
+  failed_when: container_start.rc != 0
+  when: portainer_status.stdout == "exists"
+
+- name: Run Portainer server container (only if missing)
   ansible.builtin.command: >
     docker run -d
     --name portainer
@@ -15,10 +42,7 @@
     -v /var/run/docker.sock:/var/run/docker.sock
     -v {{ portainer_data_volume }}:/data
     {{ portainer_image }}
-  register: run
-  changed_when: "'Unable to find image' in run.stderr or run.rc == 0"
-  failed_when: run.rc not in [0,125]
-
-- name: Ensure container is started
-  ansible.builtin.command: docker start portainer
-  ignore_errors: yes
+  register: container_run
+  changed_when: container_run.rc == 0
+  failed_when: container_run.rc != 0
+  when: portainer_status.stdout == "missing"

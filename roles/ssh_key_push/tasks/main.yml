@@ -1,10 +1,25 @@
 ---
+- name: Check if SSH public key file exists
+  ansible.builtin.stat:
+    path: "{{ ssh_public_key_path }}"
+  register: ssh_pubkey_file
+  delegate_to: localhost
+  run_once: true
+  failed_when: false
+
+- name: Fail if SSH public key does not exist
+  ansible.builtin.fail:
+    msg: "SSH public key not found at {{ ssh_public_key_path }}. Please ensure the key exists or update ssh_public_key_path variable."
+  when: not ssh_pubkey_file.stat.exists
+  run_once: true
+
 - name: Read local public key
   ansible.builtin.slurp:
-    src: "{{ lookup('env', 'HOME') }}/.ssh/id_ed25519.pub"
+    src: "{{ ssh_public_key_path }}"
   register: ssh_pubkey_raw
   delegate_to: localhost
   run_once: true
+  when: ssh_pubkey_file.stat.exists
 
 - name: Ensure .ssh directory exists for joshua
   ansible.builtin.file:
@@ -19,3 +34,5 @@
     user: joshua
     key: "{{ ssh_pubkey_raw.content | b64decode }}"
     state: present
+    exclusive: false
+  when: ssh_pubkey_file.stat.exists

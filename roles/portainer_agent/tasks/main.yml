@@ -1,5 +1,25 @@
 ---
-- name: Run Portainer agent container
+- name: Check if Portainer agent container exists and is running
+  ansible.builtin.shell: |
+    if docker ps --filter name=portainer_agent --filter status=running --format "{{ '{{' }}.Names{{ '}}' }}" | grep -q portainer_agent; then
+      echo "running"
+    elif docker ps -a --filter name=portainer_agent --format "{{ '{{' }}.Names{{ '}}' }}" | grep -q portainer_agent; then
+      echo "exists"
+    else
+      echo "missing"
+    fi
+  register: portainer_agent_status
+  changed_when: false
+  failed_when: false
+
+- name: Start Portainer agent container if it exists but is not running
+  ansible.builtin.command: docker start portainer_agent
+  register: container_start
+  changed_when: container_start.rc == 0
+  failed_when: container_start.rc != 0
+  when: portainer_agent_status.stdout == "exists"
+
+- name: Run Portainer agent container (only if missing)
   ansible.builtin.command: >
     docker run -d
     --name portainer_agent
@@ -8,10 +28,7 @@
     -v /var/run/docker.sock:/var/run/docker.sock
     -v /var/lib/docker/volumes:/var/lib/docker/volumes
     {{ portainer_agent_image }}
-  register: run
-  changed_when: "'Unable to find image' in run.stderr or run.rc == 0"
-  failed_when: run.rc not in [0,125]
-
-- name: Ensure container is started
-  ansible.builtin.command: docker start portainer_agent
-  ignore_errors: yes
+  register: container_run
+  changed_when: container_run.rc == 0
+  failed_when: container_run.rc != 0
+  when: portainer_agent_status.stdout == "missing"
