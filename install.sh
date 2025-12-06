@@ -94,6 +94,8 @@ echo "✓ Local inventory created"
 # Create local playbook
 echo ""
 echo "Step 4/4: Creating local playbook..."
+# Remove old playbook if it exists to ensure fresh generation
+rm -f playbooks/local-bootstrap.yml
 cat > playbooks/local-bootstrap.yml << 'EOFPB'
 ---
 - name: Configure local Docker VM
