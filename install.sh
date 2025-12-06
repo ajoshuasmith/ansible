@@ -4,16 +4,16 @@
 # This script installs Ansible, clones the repository, and configures the VM.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/joshuasmith/ansible/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ajoshuasmith/ansible/main/install.sh | bash
 #
 # Or with custom repository:
 #   ANSIBLE_REPO_URL="https://github.com/yourusername/ansible.git" \
-#   curl -fsSL https://raw.githubusercontent.com/joshuasmith/ansible/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ajoshuasmith/ansible/main/install.sh | bash
 
 set -e
 
 # Default repository (can be overridden with ANSIBLE_REPO_URL env var)
-DEFAULT_REPO_URL="https://github.com/joshuasmith/ansible.git"
+DEFAULT_REPO_URL="https://github.com/ajoshuasmith/ansible.git"
 DEFAULT_BRANCH="main"
 
 # Use environment variables if set, otherwise use defaults
