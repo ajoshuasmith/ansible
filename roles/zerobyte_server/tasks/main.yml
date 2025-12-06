@@ -1,0 +1,68 @@
+---
+- name: Create Zerobyte data directory
+  ansible.builtin.file:
+    path: "{{ zerobyte_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Check if Docker Compose is available
+  ansible.builtin.command: docker compose version
+  register: docker_compose_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail if Docker Compose is not available
+  ansible.builtin.fail:
+    msg: "Docker Compose is required for Zerobyte deployment. Please install docker-compose-plugin."
+  when: docker_compose_check.rc != 0
+
+- name: Create Zerobyte Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ zerobyte_data_dir }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Check if Zerobyte container exists
+  ansible.builtin.shell: |
+    if docker ps -a --filter name={{ zerobyte_container_name }} --format "{{ '{{' }}.Names{{ '}}' }}" | grep -q {{ zerobyte_container_name }}; then
+      echo "exists"
+    else
+      echo "missing"
+    fi
+  register: zerobyte_container_check
+  changed_when: false
+  failed_when: false
+
+- name: Stop and remove existing Zerobyte container (if exists)
+  ansible.builtin.command: docker rm -f {{ zerobyte_container_name }}
+  register: container_remove
+  changed_when: container_remove.rc == 0
+  failed_when: container_remove.rc != 0
+  when: zerobyte_container_check.stdout == "exists"
+
+- name: Deploy Zerobyte container
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: "{{ zerobyte_data_dir }}"
+  register: zerobyte_deploy
+  changed_when: zerobyte_deploy.rc == 0
+  failed_when: zerobyte_deploy.rc != 0
+
+- name: Check Zerobyte container status
+  ansible.builtin.shell: |
+    if docker ps --filter name={{ zerobyte_container_name }} --filter status=running --format "{{ '{{' }}.Names{{ '}}' }}" | grep -q {{ zerobyte_container_name }}; then
+      echo "running"
+    else
+      echo "stopped"
+    fi
+  register: zerobyte_status
+  changed_when: false
+  failed_when: false
+
+- name: Start Zerobyte container if not running
+  ansible.builtin.command: docker start {{ zerobyte_container_name }}
+  register: container_start
+  changed_when: container_start.rc == 0 and zerobyte_status.stdout == "stopped"
+  failed_when: container_start.rc != 0
+  when: zerobyte_status.stdout == "stopped"
+

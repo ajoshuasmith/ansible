@@ -6,11 +6,12 @@ This repository contains Ansible automation for managing a standardized Docker-o
 
 This Ansible repository automates the complete setup and configuration of Docker VMs with Matrix-themed hostnames (docker-neo, docker-trinity, etc.). The setup includes:
 
-- **XCP-NG guest tools** (via cloud-config)
+- **XCP-NG guest tools** (via cloud-config and Ansible)
 - **Docker Engine** installation and configuration
 - **Portainer** deployment:
   - Portainer Server on `docker-neo`
   - Portainer Agents on all other docker-* hosts
+- **Zerobyte** backup system on `docker-neo` for centralized backups to Backblaze B2
 - **SSH key management** and configuration
 
 ## Architecture
@@ -92,7 +93,8 @@ ansible/
     ├── portainer_server/ # Portainer Server deployment
     ├── portainer_agent/  # Portainer Agent deployment
     ├── ssh_baseline/     # SSH service baseline configuration
-    └── ssh_key_push/     # SSH key management
+    ├── ssh_key_push/     # SSH key management
+    └── zerobyte_server/  # Zerobyte backup system deployment
 ```
 
 ## Prerequisites
@@ -128,10 +130,15 @@ The `install.sh` script will:
 4. **Run the playbook** to configure the VM
 5. **Auto-detect hostname** and install:
    - Docker Engine (all hosts)
-   - Portainer Server (if hostname is `docker-neo`)
+   - Portainer Server + Zerobyte (if hostname is `docker-neo`)
    - Portainer Agent (if hostname matches `docker-*` but not `docker-neo`)
 
 The script provides clear progress output and a summary when complete.
+
+**After installation on docker-neo:**
+- Access Portainer at `http://docker-neo:9000` or `https://docker-neo:9443`
+- Access Zerobyte at `http://docker-neo:4096`
+- Configure Zerobyte Backblaze B2 repository via the web UI
 
 ## Adding New VMs
 
@@ -225,6 +232,49 @@ Manages SSH authorized keys for the `joshua` user.
 - `ssh_private_key_name`: Private key name (default: `id_ed25519`)
 - `ssh_public_key_path`: Full path to public key (auto-configured)
 
+### `zerobyte_server`
+
+Deploys Zerobyte backup system on `docker-neo` as a centralized backup solution.
+
+**What it does:**
+- Deploys Zerobyte as a Docker container
+- Enables Docker volume plugin functionality
+- Provides web UI for backup management
+- Supports backing up Docker volumes and directories
+- Stores backups in Backblaze B2 (configured via web UI)
+
+**Variables** (in `roles/zerobyte_server/defaults/main.yml`):
+- `zerobyte_image`: Zerobyte Docker image (default: `ghcr.io/nicotsx/zerobyte:latest`)
+- `zerobyte_container_name`: Container name (default: `zerobyte`)
+- `zerobyte_web_port`: Web UI port (default: `4096`)
+- `zerobyte_data_dir`: Data directory (default: `/var/lib/zerobyte`)
+- `zerobyte_timezone`: Timezone (default: `America/Chicago`)
+
+**Access:**
+- Web UI: `http://docker-neo-ip:4096`
+
+**Configuration:**
+- Zerobyte is deployed automatically on `docker-neo`
+- Backblaze B2 repository must be configured manually via the web UI after deployment
+- To configure Backblaze B2:
+  1. Access Zerobyte web UI at `http://docker-neo:4096`
+  2. Navigate to "Repositories" section
+  3. Create new repository
+  4. Select "S3-compatible" as repository type
+  5. Enter Backblaze B2 credentials:
+     - Endpoint: `s3.us-west-004.backblazeb2.com` (or your region endpoint)
+     - Access Key ID: Your B2 application key ID
+     - Secret Access Key: Your B2 application key
+     - Bucket name: Your B2 bucket name
+  6. Test connection and save
+
+**Backup Strategy:**
+- Zerobyte can back up:
+  - Docker volumes (accessible via Docker volume plugin)
+  - Directories (can add as volume mounts)
+  - Local appdata directories on docker-neo
+- Future enhancements may include network mounts from other VMs
+
 ## Configuration Files
 
 ### `ansible.cfg`
@@ -289,6 +339,29 @@ Global variables applied to all hosts:
 3. Verify ports aren't in use: `sudo netstat -tlnp | grep -E '9000|9443|9001'`
 4. Check if container exists: `sudo docker ps -a | grep portainer`
 
+### Zerobyte Not Starting
+
+**Problem**: Zerobyte container fails to start
+
+**Solutions**:
+1. Check Docker service: `sudo systemctl status docker`
+2. Check container logs: `sudo docker logs zerobyte`
+3. Verify FUSE is available: `ls -la /dev/fuse`
+4. Check if Docker Compose is installed: `docker compose version`
+5. Verify directory permissions: `ls -la /var/lib/zerobyte`
+6. Check port availability: `sudo netstat -tlnp | grep 4096`
+
+### Zerobyte Backblaze B2 Configuration
+
+**Problem**: Cannot connect to Backblaze B2 repository
+
+**Solutions**:
+1. Verify B2 credentials are correct (application key ID and secret)
+2. Check B2 endpoint URL matches your region (e.g., `s3.us-west-004.backblazeb2.com`)
+3. Ensure B2 bucket exists and is accessible
+4. Verify network connectivity: `curl -I https://s3.us-west-004.backblazeb2.com`
+5. Check Zerobyte container can reach the internet: `docker exec zerobyte ping -c 1 8.8.8.8`
+
 ## Security Notes
 
 - SSH keys are configured via cloud-config during VM creation
@@ -314,5 +387,7 @@ This is a personal homelab project. Use as you see fit.
 - [Ansible Documentation](https://docs.ansible.com/)
 - [Docker Documentation](https://docs.docker.com/)
 - [Portainer Documentation](https://documentation.portainer.io/)
+- [Zerobyte GitHub](https://github.com/nicotsx/zerobyte)
+- [Backblaze B2 Documentation](https://www.backblaze.com/b2/docs/)
 - [XCP-NG Documentation](https://xcp-ng.org/docs/)
 

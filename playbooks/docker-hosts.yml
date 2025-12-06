@@ -19,6 +19,7 @@
   become: true
   roles:
     - portainer_server
+    - zerobyte_server
 
 - name: Deploy Portainer Agent on other docker-* hosts
   hosts: portainer_agents

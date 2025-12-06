@@ -101,12 +101,13 @@ cat > playbooks/local-bootstrap.yml << 'EOFPB'
   roles:
     - docker_engine
 
-- name: Deploy Portainer Server (docker-neo only)
+- name: Deploy Portainer Server and Zerobyte (docker-neo only)
   hosts: localhost
   become: true
   connection: local
   roles:
     - portainer_server
+    - zerobyte_server
   when: ansible_hostname == 'docker-neo'
 
 - name: Deploy Portainer Agent (other docker-* hosts)

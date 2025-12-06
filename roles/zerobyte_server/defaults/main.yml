@@ -1,0 +1,10 @@
+---
+# Zerobyte container configuration
+zerobyte_image: ghcr.io/nicotsx/zerobyte:latest
+zerobyte_container_name: zerobyte
+zerobyte_web_port: "4096"
+zerobyte_data_dir: /var/lib/zerobyte
+
+# Timezone (default to America/Chicago, can be overridden)
+zerobyte_timezone: "America/Chicago"
+
