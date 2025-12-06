@@ -56,7 +56,16 @@ if [[ -d "${REPO_DIR}/.git" ]]; then
     git pull origin "${BRANCH}" > /dev/null 2>&1 || echo "Warning: Could not pull latest changes"
 else
     echo "Cloning repository..."
-    git clone -b "${BRANCH}" "${REPO_URL}" "${REPO_DIR}" > /dev/null 2>&1
+    if ! git clone -b "${BRANCH}" "${REPO_URL}" "${REPO_DIR}" > /dev/null 2>&1; then
+        echo ""
+        echo "ERROR: Failed to clone repository."
+        echo "Please check:"
+        echo "  - Network connectivity"
+        echo "  - Repository URL is correct: ${REPO_URL}"
+        echo "  - Repository is accessible (public or you have access)"
+        echo ""
+        exit 1
+    fi
     cd "${REPO_DIR}"
 fi
 echo "✓ Repository cloned/updated"
