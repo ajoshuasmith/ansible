@@ -12,6 +12,7 @@
   roles:
     - ssh_baseline
     - ssh_key_push
+    - xcp_guest_tools
     - docker_engine
 
 - name: Deploy Portainer Server on docker-neo
@@ -20,6 +21,8 @@
   roles:
     - portainer_server
     - zerobyte_server
+    - pocket_id
+    - semaphore
 
 - name: Deploy Portainer Agent on other docker-* hosts
   hosts: portainer_agents

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  semaphore:
+    image: {{ semaphore_image }}
+    container_name: {{ semaphore_container_name }}
+    restart: always
+    ports:
+      - "{{ semaphore_port }}:3000"
+    environment:
+      SEMAPHORE_DB_DIALECT: bolt
+      SEMAPHORE_ADMIN_PASSWORD: changeme
+      SEMAPHORE_ADMIN_NAME: "{{ semaphore_admin_name }}"
+      SEMAPHORE_ADMIN_EMAIL: "{{ semaphore_admin_email }}"
+      SEMAPHORE_ADMIN: "{{ semaphore_admin_user }}"
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: "{{ semaphore_access_key_encryption }}"
+    volumes:
+      - {{ semaphore_data_dir }}:/etc/semaphore:rw

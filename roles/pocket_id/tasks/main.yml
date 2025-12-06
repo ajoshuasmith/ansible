@@ -1,0 +1,20 @@
+---
+- name: Create Pocket ID data directory
+  ansible.builtin.file:
+    path: "{{ pocket_id_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Pocket ID Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ pocket_id_data_dir }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Deploy Pocket ID with docker compose
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: "{{ pocket_id_data_dir }}"
+  register: pocket_id_deploy
+  changed_when: pocket_id_deploy.rc == 0
+  failed_when: pocket_id_deploy.rc != 0

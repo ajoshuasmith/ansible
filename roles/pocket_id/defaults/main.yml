@@ -1,0 +1,7 @@
+---
+pocket_id_image: stonith404/pocket-id:latest
+pocket_id_container_name: pocket-id
+pocket_id_port: "8080"
+pocket_id_data_dir: /var/lib/pocket-id
+pocket_id_public_app_url: "http://192.168.1.30:8080"
+pocket_id_trust_proxy: "false"

@@ -1,0 +1,20 @@
+---
+- name: Create Semaphore data directory
+  ansible.builtin.file:
+    path: "{{ semaphore_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create Semaphore Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ semaphore_data_dir }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Deploy Semaphore with docker compose
+  ansible.builtin.command: docker compose up -d
+  args:
+    chdir: "{{ semaphore_data_dir }}"
+  register: semaphore_deploy
+  changed_when: semaphore_deploy.rc == 0
+  failed_when: semaphore_deploy.rc != 0
