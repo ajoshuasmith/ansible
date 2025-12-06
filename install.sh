@@ -114,18 +114,26 @@ cat > playbooks/local-bootstrap.yml << 'EOFPB'
   hosts: localhost
   become: true
   connection: local
-  roles:
-    - portainer_server
-    - zerobyte_server
-  when: ansible_hostname == 'docker-neo'
+  tasks:
+    - name: Include portainer_server role
+      ansible.builtin.include_role:
+        name: portainer_server
+      when: ansible_hostname == 'docker-neo'
+
+    - name: Include zerobyte_server role
+      ansible.builtin.include_role:
+        name: zerobyte_server
+      when: ansible_hostname == 'docker-neo'
 
 - name: Deploy Portainer Agent (other docker-* hosts)
   hosts: localhost
   become: true
   connection: local
-  roles:
-    - portainer_agent
-  when: ansible_hostname != 'docker-neo' and ansible_hostname is match('^docker-.*')
+  tasks:
+    - name: Include portainer_agent role
+      ansible.builtin.include_role:
+        name: portainer_agent
+      when: ansible_hostname != 'docker-neo' and ansible_hostname is match('^docker-.*')
 EOFPB
 echo "✓ Local playbook created"
 
