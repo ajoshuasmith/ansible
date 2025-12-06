@@ -1,46 +1,38 @@
 # Homelab Ansible Automation
 
-This repository contains Ansible automation for managing a standardized Docker-only virtual machine fleet in a homelab environment using XCP-NG virtualization and Ubuntu 22.04 VMs.
+A comprehensive Ansible repository for automating the setup and management of my Docker-based homelab environment running on XCP-NG with Ubuntu VMs. This setup provides a standardized, reproducible way to configure my entire Docker infrastructure.
 
-## Overview
+## What This Does
 
-This Ansible repository automates the complete setup and configuration of Docker VMs with Matrix-themed hostnames (docker-neo, docker-trinity, etc.). The setup includes:
+I use this repository to automate the complete lifecycle of my Docker VMs, from initial setup to ongoing management. It handles:
 
-- **XCP-NG guest tools** (via cloud-config and Ansible)
-- **Docker Engine** installation and configuration
-- **Portainer** deployment:
-  - Portainer Server on `docker-neo`
-  - Portainer Agents on all other docker-* hosts
-- **Zerobyte** backup system on `docker-neo` for centralized backups to Backblaze B2
-- **SSH key management** and configuration
+- **XCP-NG guest tools** installation and configuration
+- **Docker Engine** installation from official repositories
+- **Portainer** deployment for container management:
+  - Portainer Server on my primary host
+  - Portainer Agents on all other Docker hosts
+- **Zerobyte** backup system for centralized backups to Backblaze B2
+- **SSH configuration** and key management
 
-## Architecture
+Perfect for my homelab setup where I want infrastructure-as-code principles applied to my Docker fleet.
 
-### VM Naming Convention
+## Architecture Overview
 
-All Docker hosts follow a Matrix-themed naming scheme:
-- `docker-neo` - Runs Portainer Server (192.168.1.30)
-- `docker-trinity` - Runs Portainer Agent (192.168.1.31)
-- `docker-morpheus` - Runs Portainer Agent (192.168.1.32)
-- `docker-oracle` - Runs Portainer Agent (192.168.1.33)
+### Host Naming
 
-### Network Configuration
+I use themed hostnames (you can customize this). By default, my primary server runs Portainer Server and Zerobyte, while other hosts run Portainer Agents.
 
-- **IP Range**: 192.168.1.30 - 192.168.1.40
-- **Ansible User**: `joshua`
-- **SSH Key**: `~/.ssh/id_ed25519` (ed25519 keypair)
+### Network Setup
 
-### Initial VM Setup (Cloud-Config)
+- I configure my IP range in the inventory file
+- All hosts use a single Ansible user account
+- I use SSH key-based authentication throughout
 
-VMs are initially configured using Xen Orchestra cloud-config which handles:
+### Initial VM Setup
 
-- User creation (`joshua` with sudo access)
-- SSH public key installation
-- `qemu-guest-agent` installation
-- Python3 and python3-apt installation (required for Ansible)
-- Basic system configuration (hostname, locale, timezone)
+I create VMs using cloud-init/cloud-config in my hypervisor (Xen Orchestra, XCP-NG, etc.). This handles the initial user setup, SSH keys, and basic system configuration.
 
-The cloud-config template used in Xen Orchestra should include:
+A typical cloud-config template I use looks like this:
 
 ```yaml
 #cloud-config
@@ -50,15 +42,15 @@ locale: en_US.UTF-8
 timezone: America/Chicago
 
 users:
-  - name: joshua
-    gecos: "Joshua"
+  - name: ansible
+    gecos: "Ansible User"
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     groups: users, admin, sudo
     shell: /bin/bash
     lock_passwd: false
-    passwd: "$6$0YyYt5a/v9yRulBe$lwS6OmRsRxZ2fwD1ZgSl8RsONbsBRJiboN1P01Yx0AFLG5HxsFhqHeL5S2KcJNFnC99lSy0FzJ0405EJYDHLg0"
+    passwd: "$6$rounds=4096$your_hashed_password_here"
     ssh_authorized_keys:
-      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICJHOxeEHwV5ad6CpPgLwVordrlndSXXz5J2MJoRf0Y8 joshua@homelab"
+      - "ssh-ed25519 YOUR_PUBLIC_KEY_HERE"
 
 ssh_pwauth: true
 
@@ -74,315 +66,188 @@ runcmd:
   - systemctl start qemu-guest-agent
 ```
 
-**Note**: Update the `ssh_authorized_keys` value with your actual public key from `~/.ssh/id_ed25519.pub`.
+**Important**: I replace the password hash and SSH public key with my own values. I generate a password hash using `mkpasswd --method=sha-512` or Python's `crypt` module.
 
 ## Repository Structure
 
 ```
 ansible/
-├── install.sh             # VM bootstrap script (run from Ubuntu VM via curl)
+├── install.sh             # Bootstrap script (run from Ubuntu VM via curl)
 ├── ansible.cfg            # Ansible configuration
 ├── inventory/
-│   └── hosts.ini         # Inventory file with VM definitions
+│   └── hosts.ini         # VM inventory definitions
 ├── group_vars/
 │   └── all.yml           # Global variables
 ├── playbooks/
-│   └── docker-hosts.yml  # Main playbook for Docker VM configuration
+│   └── docker-hosts.yml  # Main configuration playbook
 └── roles/
     ├── docker_engine/    # Docker Engine installation
     ├── portainer_server/ # Portainer Server deployment
     ├── portainer_agent/  # Portainer Agent deployment
-    ├── ssh_baseline/     # SSH service baseline configuration
+    ├── ssh_baseline/     # SSH service configuration
     ├── ssh_key_push/     # SSH key management
-    └── zerobyte_server/  # Zerobyte backup system deployment
+    ├── xcp_guest_tools/  # XCP-NG guest utilities
+    └── zerobyte_server/  # Zerobyte backup system
 ```
 
-## Prerequisites
+## Getting Started
 
-1. **Ubuntu 22.04 VM** created with cloud-config (see Initial VM Setup section)
-   - User `joshua` with sudo access
-   - SSH key already configured via cloud-config
+### Prerequisites
 
-2. **SSH Access** to the VM
-   - You should be able to SSH into the VM as the `joshua` user
-   - SSH key should already be configured from cloud-config
+I need:
+- Ubuntu 22.04 VMs created with cloud-config
+- SSH access to my VMs
+- Basic familiarity with Ansible (helpful but not required)
 
-## Quick Start
+### Quick Setup
 
-After SSHing into your Ubuntu VM, run the install script:
+After creating a VM and SSH'ing into it, I simply run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/joshuasmith/ansible/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yourusername/ansible/main/install.sh | bash
 ```
 
-Or with a custom repository URL:
+That's it! The script will:
+1. Install Ansible on the VM
+2. Clone this repository
+3. Create the necessary configuration files
+4. Run the playbook to set everything up
+5. Automatically detect what roles to deploy based on the hostname
+
+If I'm using a custom repository URL, I can override it:
 
 ```bash
 ANSIBLE_REPO_URL="https://github.com/yourusername/ansible.git" \
-curl -fsSL https://raw.githubusercontent.com/joshuasmith/ansible/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yourusername/ansible/main/install.sh | bash
 ```
 
-The `install.sh` script will:
+**After installation on my primary host:**
+- I access Portainer at `http://my-host:9000` or `https://my-host:9443`
+- I access Zerobyte at `http://my-host:4096`
+- I configure my Zerobyte Backblaze B2 repository through the web UI
 
-1. **Install Ansible** on the Ubuntu VM
-2. **Clone the repository** to `/tmp/ansible-homelab`
-3. **Create local inventory** for localhost execution
-4. **Run the playbook** to configure the VM
-5. **Auto-detect hostname** and install:
-   - Docker Engine (all hosts)
-   - Portainer Server + Zerobyte (if hostname is `docker-neo`)
-   - Portainer Agent (if hostname matches `docker-*` but not `docker-neo`)
+## Adding New Hosts
 
-The script provides clear progress output and a summary when complete.
+To add a new Docker host to my fleet:
 
-**After installation on docker-neo:**
-- Access Portainer at `http://docker-neo:9000` or `https://docker-neo:9443`
-- Access Zerobyte at `http://docker-neo:4096`
-- Configure Zerobyte Backblaze B2 repository via the web UI
+1. **Create the VM** in my hypervisor with cloud-config
+2. **Update my inventory** (`inventory/hosts.ini`) to include the new host
+3. **SSH into the new VM** and run the install script
 
-## Adding New VMs
+The system will automatically detect the hostname and deploy the appropriate services.
 
-To add a new Docker VM to your fleet:
+## Role Details
 
-### 1. Create VM in Xen Orchestra
+### Docker Engine
 
-- Use the cloud-config template (update hostname)
-- Assign IP address from range 192.168.1.30-40
-- Ensure SSH key matches your `~/.ssh/id_ed25519.pub`
+Installs Docker Engine from Docker's official APT repository, including Docker CLI, containerd, and Docker Compose plugins.
 
-### 2. Update Inventory
+### Portainer
 
-Edit `inventory/hosts.ini`:
+Portainer provides a web UI for managing Docker containers. My setup deploys:
+- **Portainer Server** on my primary host (manages the environment)
+- **Portainer Agents** on other hosts (report back to the server)
 
-```ini
-[portainer_agents]
-docker-trinity ansible_host=192.168.1.31 ansible_user=joshua
-docker-morpheus ansible_host=192.168.1.32 ansible_user=joshua
-docker-oracle ansible_host=192.168.1.33 ansible_user=joshua
-docker-newhost ansible_host=192.168.1.34 ansible_user=joshua  # Add new host
-```
+I can manage everything from a single Portainer Server interface.
 
-**Note**: If adding a new Portainer Server, add it under `[portainer_server]` instead.
+### Zerobyte
 
-### 3. Run Install Script
+Zerobyte is my backup automation tool built on Restic. It provides:
+- Web UI for managing backups
+- Support for Docker volumes and directories
+- Integration with Backblaze B2 (S3-compatible storage)
+- Automated scheduling and retention policies
 
-SSH into the new VM and run:
+After deployment, I configure my Backblaze B2 repository through the Zerobyte web UI. The setup instructions are straightforward and handled entirely through the interface.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/joshuasmith/ansible/main/install.sh | bash
-```
+### SSH Configuration
 
-## Roles
+The SSH baseline role ensures SSH is properly configured and running, while the key push role manages authorized keys across all hosts for seamless access.
 
-### `docker_engine`
+### XCP-NG Guest Tools
 
-Installs Docker Engine from Docker's official repository.
+Installs and configures the XCP-NG guest utilities (`xe-guest-utilities`) which provide better integration with my hypervisor, including proper hostname reporting and performance metrics.
 
-**What it does:**
-- Adds Docker GPG key and repository
-- Installs Docker CE and plugins
-- Ensures Docker service is enabled and running
+## Configuration
 
-### `portainer_server`
+### Inventory File
 
-Deploys Portainer Server on `docker-neo`.
+My `inventory/hosts.ini` file defines my hosts. I organize them into groups like `[portainer_server]` and `[portainer_agents]` to control which services run where.
 
-**What it does:**
-- Creates Docker volume for Portainer data
-- Runs Portainer Server container
-- Exposes ports 9000 (HTTP) and 9443 (HTTPS)
+### Variables
 
-**Variables** (in `roles/portainer_server/defaults/main.yml`):
-- `portainer_image`: Portainer image (default: `portainer/portainer-ce:latest`)
-- `portainer_data_volume`: Volume name (default: `portainer_data`)
-- `portainer_http_port`: HTTP port (default: `9000`)
-- `portainer_https_port`: HTTPS port (default: `9443`)
-
-### `portainer_agent`
-
-Deploys Portainer Agent on all other docker-* hosts.
-
-**What it does:**
-- Runs Portainer Agent container
-- Exposes agent port (default: 9001)
-
-**Variables** (in `roles/portainer_agent/defaults/main.yml`):
-- `portainer_agent_image`: Agent image (default: `portainer/agent:latest`)
-- `portainer_agent_port`: Agent port (default: `9001`)
-
-### `ssh_baseline`
-
-Ensures SSH service is properly configured.
-
-**What it does:**
-- Installs OpenSSH server if missing
-- Ensures SSH service is enabled and running
-- Configures UFW firewall rule (if UFW is installed)
-
-### `ssh_key_push`
-
-Manages SSH authorized keys for the `joshua` user.
-
-**What it does:**
-- Reads local public key (`~/.ssh/id_ed25519.pub`)
-- Adds public key to `~/.ssh/authorized_keys` on all hosts
-- Idempotent (safe to run multiple times)
-
-**Variables** (in `roles/ssh_key_push/defaults/main.yml`):
-- `ssh_private_key_name`: Private key name (default: `id_ed25519`)
-- `ssh_public_key_path`: Full path to public key (auto-configured)
-
-### `zerobyte_server`
-
-Deploys Zerobyte backup system on `docker-neo` as a centralized backup solution.
-
-**What it does:**
-- Deploys Zerobyte as a Docker container
-- Enables Docker volume plugin functionality
-- Provides web UI for backup management
-- Supports backing up Docker volumes and directories
-- Stores backups in Backblaze B2 (configured via web UI)
-
-**Variables** (in `roles/zerobyte_server/defaults/main.yml`):
-- `zerobyte_image`: Zerobyte Docker image (default: `ghcr.io/nicotsx/zerobyte:latest`)
-- `zerobyte_container_name`: Container name (default: `zerobyte`)
-- `zerobyte_web_port`: Web UI port (default: `4096`)
-- `zerobyte_data_dir`: Data directory (default: `/var/lib/zerobyte`)
-- `zerobyte_timezone`: Timezone (default: `America/Chicago`)
-
-**Access:**
-- Web UI: `http://docker-neo-ip:4096`
-
-**Configuration:**
-- Zerobyte is deployed automatically on `docker-neo`
-- Backblaze B2 repository must be configured manually via the web UI after deployment
-- To configure Backblaze B2:
-  1. Access Zerobyte web UI at `http://docker-neo:4096`
-  2. Navigate to "Repositories" section
-  3. Create new repository
-  4. Select "S3-compatible" as repository type
-  5. Enter Backblaze B2 credentials:
-     - Endpoint: `s3.us-west-004.backblazeb2.com` (or your region endpoint)
-     - Access Key ID: Your B2 application key ID
-     - Secret Access Key: Your B2 application key
-     - Bucket name: Your B2 bucket name
-  6. Test connection and save
-
-**Backup Strategy:**
-- Zerobyte can back up:
-  - Docker volumes (accessible via Docker volume plugin)
-  - Directories (can add as volume mounts)
-  - Local appdata directories on docker-neo
-- Future enhancements may include network mounts from other VMs
-
-## Configuration Files
-
-### `ansible.cfg`
-
-Central Ansible configuration:
-- Sets inventory path
-- Configures SSH connection settings
-- Defines roles path
-- Sets privilege escalation defaults
-
-### `inventory/hosts.ini`
-
-VM inventory organized into groups:
-- `[portainer_server]`: Host running Portainer Server
-- `[portainer_agents]`: Hosts running Portainer Agents
-- `[docker_hosts]`: Parent group containing all docker VMs
-
-### `group_vars/all.yml`
-
-Global variables applied to all hosts:
-- `ansible_user`: SSH user (default: `joshua`)
+Most configuration is handled through role defaults in `roles/*/defaults/main.yml`. I override these in `group_vars/` or `host_vars/` if needed.
 
 ## Troubleshooting
 
-### SSH Connection Issues
-
-**Problem**: Can't connect to VMs via SSH
-
-**Solutions**:
-1. Verify VM IP addresses are correct in `inventory/hosts.ini`
-2. Check that SSH key matches cloud-config (`~/.ssh/id_ed25519.pub`)
-3. Ensure VMs are reachable: `ping 192.168.1.30`
-4. Check SSH config: `ssh -v docker-neo`
-
 ### Install Script Issues
 
-**Problem**: Install script fails
+If the install script fails for me:
+- I make sure I have sudo access: `sudo -v`
+- I check network connectivity: `ping 8.8.8.8`
+- I verify Git is installed (should be included in Ubuntu)
+- I check if the repository URL is accessible
 
-**Solutions**:
-1. Ensure you have sudo access: `sudo -v`
-2. Check network connectivity: `ping 8.8.8.8`
-3. Verify Git is installed: `git --version`
-4. Check if repository is accessible: `curl -I https://github.com/joshuasmith/ansible`
+### Playbook Failures
 
-### Ansible Playbook Failures
+For playbook issues:
+- I run with verbose output: `ansible-playbook -vv -i inventory/local/hosts.ini playbooks/local-bootstrap.yml`
+- I ensure Python 3 is installed: `python3 --version`
+- I verify sudo access works: `sudo -n true`
+- I check the Ansible output for specific error messages
 
-**Problem**: Playbook fails during execution
+### Container Issues
 
-**Solutions**:
-1. Check verbose output: `ansible-playbook -vv -i inventory/local/hosts.ini playbooks/local-bootstrap.yml`
-2. Verify Python is installed: `python3 --version`
-3. Check sudo access: `sudo -n true`
-4. Review Ansible logs in the output for specific error messages
+If containers won't start:
+- I check Docker service: `sudo systemctl status docker`
+- I review container logs: `sudo docker logs <container-name>`
+- I verify ports aren't in use: `sudo netstat -tlnp | grep <port>`
+- I ensure containers exist: `sudo docker ps -a`
 
-### Portainer Not Starting
+### Zerobyte Configuration
 
-**Problem**: Portainer containers fail to start
+If I can't connect Zerobyte to Backblaze B2:
+- I double-check my B2 application key ID and secret
+- I verify the endpoint URL matches my B2 region
+- I ensure the bucket exists and is accessible
+- I test network connectivity from the Zerobyte container
 
-**Solutions**:
-1. Check Docker service: `sudo systemctl status docker`
-2. Check container logs: `sudo docker logs portainer` or `sudo docker logs portainer_agent`
-3. Verify ports aren't in use: `sudo netstat -tlnp | grep -E '9000|9443|9001'`
-4. Check if container exists: `sudo docker ps -a | grep portainer`
+## Customization
 
-### Zerobyte Not Starting
+This setup is designed to be easily customizable. If I want to use a different backup solution, I swap out the Zerobyte role. If I need different Docker configurations, I modify the docker_engine role. The modular structure makes it simple to adapt to my specific needs.
 
-**Problem**: Zerobyte container fails to start
-
-**Solutions**:
-1. Check Docker service: `sudo systemctl status docker`
-2. Check container logs: `sudo docker logs zerobyte`
-3. Verify FUSE is available: `ls -la /dev/fuse`
-4. Check if Docker Compose is installed: `docker compose version`
-5. Verify directory permissions: `ls -la /var/lib/zerobyte`
-6. Check port availability: `sudo netstat -tlnp | grep 4096`
-
-### Zerobyte Backblaze B2 Configuration
-
-**Problem**: Cannot connect to Backblaze B2 repository
-
-**Solutions**:
-1. Verify B2 credentials are correct (application key ID and secret)
-2. Check B2 endpoint URL matches your region (e.g., `s3.us-west-004.backblazeb2.com`)
-3. Ensure B2 bucket exists and is accessible
-4. Verify network connectivity: `curl -I https://s3.us-west-004.backblazeb2.com`
-5. Check Zerobyte container can reach the internet: `docker exec zerobyte ping -c 1 8.8.8.8`
-
-## Security Notes
+## Security Considerations
 
 - SSH keys are configured via cloud-config during VM creation
-- Repository is cloned from GitHub (ensure it's private if containing sensitive data)
-- Consider hardening SSH configuration in future iterations
-- Portainer should be secured with authentication after initial setup
+- Sensitive files are excluded via `.gitignore` (passwords, keys, secrets, etc.)
+- I consider making my repository private if it contains sensitive information
+- I use Ansible Vault for encrypting sensitive variables if needed
+- I never commit actual credentials or private keys to the repository
+- I create `.example` or `.template` versions of files containing sensitive data
+- SSH hardening can be added as a future enhancement
+- Portainer and Zerobyte should be secured with authentication after initial setup
+- I keep my Ansible repository updated and review changes before applying
+
+**Before pushing to a public repository:**
+- I review `.gitignore` to ensure sensitive files are excluded
+- I check `git status` to verify no sensitive files are staged
+- I scan for accidentally committed secrets: `git log --all --full-history -- "*secret*" "*password*" "*key*"`
 
 ## Contributing
 
-When making changes:
+This is my personal homelab project, but contributions and feedback are welcome! If you find issues or have suggestions, feel free to open an issue or submit a pull request.
 
-1. Test on a single VM first
-2. Ensure roles are idempotent (safe to run multiple times)
-3. Update documentation for any new features
-4. Follow Ansible best practices
+When contributing:
+- Test changes on a single VM first
+- Ensure roles are idempotent (safe to run multiple times)
+- Update documentation for any new features
+- Follow Ansible best practices
 
 ## License
 
-This is a personal homelab project. Use as you see fit.
+This project is provided as-is for personal use. Feel free to fork and adapt it to your own needs.
 
-## References
+## Additional Resources
 
 - [Ansible Documentation](https://docs.ansible.com/)
 - [Docker Documentation](https://docs.docker.com/)
@@ -390,4 +255,3 @@ This is a personal homelab project. Use as you see fit.
 - [Zerobyte GitHub](https://github.com/nicotsx/zerobyte)
 - [Backblaze B2 Documentation](https://www.backblaze.com/b2/docs/)
 - [XCP-NG Documentation](https://xcp-ng.org/docs/)
-
