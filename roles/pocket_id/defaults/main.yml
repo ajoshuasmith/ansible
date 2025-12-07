@@ -1,5 +1,5 @@
 ---
-pocket_id_image: stonith404/pocket-id:latest
+pocket_id_image: ghcr.io/pocket-id/pocket-id:latest
 pocket_id_container_name: pocket-id
 pocket_id_port: "8080"
 pocket_id_data_dir: /var/lib/pocket-id
