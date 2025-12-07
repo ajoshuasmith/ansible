@@ -110,9 +110,10 @@ cat > playbooks/local-bootstrap.yml << 'EOFPB'
         cache_valid_time: 3600
 
   roles:
+    - xcp_guest_tools
     - docker_engine
 
-- name: Deploy Portainer Server and Zerobyte (docker-neo only)
+- name: Deploy Portainer Server and services (docker-neo only)
   hosts: localhost
   become: true
   connection: local
@@ -125,6 +126,16 @@ cat > playbooks/local-bootstrap.yml << 'EOFPB'
     - name: Include zerobyte_server role
       ansible.builtin.include_role:
         name: zerobyte_server
+      when: ansible_hostname == 'docker-neo'
+
+    - name: Include pocket_id role
+      ansible.builtin.include_role:
+        name: pocket_id
+      when: ansible_hostname == 'docker-neo'
+
+    - name: Include semaphore role
+      ansible.builtin.include_role:
+        name: semaphore
       when: ansible_hostname == 'docker-neo'
 
 - name: Deploy Portainer Agent (other docker-* hosts)
@@ -155,15 +166,21 @@ echo "  Bootstrap Complete!"
 echo "========================================="
 echo ""
 echo "Your VM has been configured with:"
+echo "  ✓ XCP-NG Guest Utilities"
 echo "  ✓ Docker Engine"
 HOSTNAME=$(hostname)
 if [[ "${HOSTNAME}" == "docker-neo" ]]; then
     IP=$(hostname -I | awk '{print $1}')
     echo "  ✓ Portainer Server"
+    echo "  ✓ Zerobyte Backup"
+    echo "  ✓ Pocket ID Authentication"
+    echo "  ✓ Semaphore Ansible UI"
     echo ""
-    echo "Access Portainer:"
-    echo "  - HTTPS: https://${IP}:9443"
-    echo "  - HTTP:  http://${IP}:9000"
+    echo "Access Services:"
+    echo "  - Portainer:  https://${IP}:9443 (or http://${IP}:9000)"
+    echo "  - Zerobyte:   http://${IP}:4096"
+    echo "  - Pocket ID:  http://${IP}:8080"
+    echo "  - Semaphore:  http://${IP}:3000"
 else
     echo "  ✓ Portainer Agent (port 9001)"
 fi
