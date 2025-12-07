@@ -10,7 +10,7 @@ services:
     environment:
       SEMAPHORE_DB_DIALECT: sqlite
       SEMAPHORE_DB_PATH: /etc/semaphore/semaphore.db
-      SEMAPHORE_ADMIN_PASSWORD: changeme
+      SEMAPHORE_ADMIN_PASSWORD: "{{ semaphore_admin_password }}"
       SEMAPHORE_ADMIN_NAME: "{{ semaphore_admin_name }}"
       SEMAPHORE_ADMIN_EMAIL: "{{ semaphore_admin_email }}"
       SEMAPHORE_ADMIN: "{{ semaphore_admin_user }}"

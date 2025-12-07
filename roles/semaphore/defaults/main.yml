@@ -4,6 +4,7 @@ semaphore_container_name: semaphore
 semaphore_port: "3000"
 semaphore_data_dir: /var/lib/semaphore
 semaphore_admin_user: admin
+semaphore_admin_password: changeme
 semaphore_admin_email: "admin@localhost"
 semaphore_admin_name: "Admin"
 semaphore_access_key_encryption: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') }}"
