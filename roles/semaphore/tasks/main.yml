@@ -3,7 +3,7 @@
   ansible.builtin.file:
     path: "{{ semaphore_data_dir }}"
     state: directory
-    mode: '0755'
+    mode: '0777'
 
 - name: Create Semaphore Docker Compose file
   ansible.builtin.template:
